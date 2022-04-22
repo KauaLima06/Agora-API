@@ -4,9 +4,11 @@ const express = require('express');
 const mongoose = require('mongoose');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
+const apiRouters = require('./routers/apiRouters.js');
 
 const app = express();
 app.use(express.json());
+app.use('/user', apiRouters);
 
 //mongodb+srv://KauaLima06:<password>@api-db.0xuhv.mongodb.net/myFirstDatabase?retryWrites=true&w=majority
 const db_user = process.env.DB_USER;
