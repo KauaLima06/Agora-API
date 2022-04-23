@@ -10,7 +10,7 @@ const userSchema = new Schema({
     userId: {
         type: String,
         required: true,
-        default: generateUserId(),
+        default: generateUserId,
     },
     email: {
         type: String,
@@ -26,3 +26,7 @@ const userSchema = new Schema({
         default: [],
     }
 });
+
+const User = mongoose.model('User', userSchema);
+
+module.exports = User;
