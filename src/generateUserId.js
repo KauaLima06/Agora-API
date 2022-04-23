@@ -11,16 +11,12 @@ const generateUserId = () => {
     id = id.concat(upperCase);
     id = id.concat(numbers);
 
-    console.log(id)
-
     let idCharacters = [];
 
     for(let i = 0; i < 7; i++){
         let character = id[Math.floor(Math.random(id) * id.length)];
         idCharacters.push(String.fromCharCode(character));
     }
-
-    console.log(idCharacters.join(''))
     return idCharacters.join('');
 };
 
