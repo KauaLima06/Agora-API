@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 const { Schema } = mongoose;
-const generateUserId = require('../src/generateUserId.js');
+const generateId = require('../src/generateId.js');
 
 const userSchema = new Schema({
     userName: {
@@ -10,7 +10,7 @@ const userSchema = new Schema({
     userId: {
         type: String,
         required: true,
-        default: generateUserId,
+        default: generateId,
     },
     email: {
         type: String,
@@ -21,9 +21,9 @@ const userSchema = new Schema({
         required: true,
     },
     contactList: {
-        type: Object,
+        type: String,
         required: true,
-        default: [],
+        default: '',
     }
 });
 

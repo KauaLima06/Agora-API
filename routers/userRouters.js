@@ -2,7 +2,7 @@ const router = require('express').Router();
 const User = require('../models/User.js');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
-const generateUserId = require('../src/generateUserId.js');
+const generateId = require('../src/generateId.js');
 
 router.get('/', (req, res) => {
     res.status(200).json({message: 'Agora API'});
@@ -35,11 +35,11 @@ router.post('/register', async(req, res) => {
 
     const contactList = [];
 
-    let userId = generateUserId();
+    let userId = generateId();
     let findUserId = await User.findOne({userId: userId}, '-password');
     if(findUserId){
         do {
-            userId = generateUserId();
+            userId = generateId();
             findUserId = await User.findOne({userId: userId}, '-password');
         }while(findUserId)
     }
@@ -60,7 +60,7 @@ router.post('/register', async(req, res) => {
         res.status(201).json(
             user = {
                 userName,
-                userId: generateUserId,
+                userId: generateId,
                 email,
                 contactList
             }

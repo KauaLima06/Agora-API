@@ -1,5 +1,5 @@
 //User Id Generator
-const generateUserId = () => {
+const generateId = () => {
     
     const lowerCase = createArray(97, 122);
     const upperCase = createArray(65, 90);
@@ -30,4 +30,4 @@ function createArray(first, last){
     return array;
 }
 
-module.exports = generateUserId;
+module.exports = generateId;
