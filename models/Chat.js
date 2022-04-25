@@ -20,7 +20,7 @@ const chatSchema = new Schema({
     messages: {
         type: String,
         required: false,
-        default: '',
+        default: '[]',
     }
 });
 
