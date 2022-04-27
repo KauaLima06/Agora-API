@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 const generateId = require('../src/generateId.js');
 const User = require('../models/User.js');
+const { json } = require('express/lib/response');
 
 //teste router
 router.get('/', (req, res) => {
@@ -26,12 +27,45 @@ router.post('/create', async(req, res) => {
     }
 
     let chatId = generateId();
-    let findChat = await Chat.findOne({chatId: chatId});
+    const findChat = await Chat.findOne({chatId: chatId});
     if(findChat){
         do{
             chatId = generateId();
             findChat = await Chat.findOne({chatId: chatId});
         }while(findChat)
+    }
+
+    const chatMembers = members;
+
+    for(let pos in chatMembers){
+
+        const findUser = await User.findOne({userId: chatMembers[pos]});
+        if(!findUser){
+            continue;
+        }else{
+
+            let { userName, userId, email, password, contactList , chats } = findUser;
+
+            chats.push(chatId);
+
+            const user = {
+                userName,
+                userId,
+                email,
+                password,
+                contactList,
+                chats,
+            };
+
+            try {
+
+                await User.updateOne({userId: userId}, user);
+                
+            } catch (error) {
+                return res.status(500).json({error: error});
+            }
+        }
+
     }
 
     let chat = {
@@ -65,7 +99,7 @@ router.get('/list', async(req, res) => {
     //get all groups
     const chatList = await Chat.find({});
     if(!chatList){
-        return res.status(404).json({error: 'Groups not found'})
+        return res.status(404).json({error: 'Chat not found'})
     }
 
     res.status(200).json(chatList);
@@ -78,7 +112,7 @@ router.get('/find/:chatId', async(req, res)=> {
 
     const findChat = await Chat.findOne({chatId: chatId});
     if(!findChat){
-        return res.status(404).json({error: 'Group not found'});
+        return res.status(404).json({error: 'Chat not found'});
     }
 
     res.status(200).json(findChat);
@@ -120,9 +154,41 @@ router.patch('/update/:chatId', async(req, res) => {
 router.delete('/delete/:chatId', async(req, res) => {
 
     const chatId = req.params.chatId;
+    //checking if chat exist
     const findChat = await Chat.findOne({chatId: chatId});
     if(!findChat){
         return res.status(404).json({error: 'Chat not found'});
+    }else{
+        //list of chat members
+        const chatMembers = findChat.members;
+        for(let pos in chatMembers){
+
+            try {
+                
+                const findUser = await User.findOne({userId: chatMembers[pos]});
+                const { userName, userId, email, password, contactList, chats: userChats } = findUser;
+
+                // picking up the user's chat list and removing the chat that will be deleted
+                const removedChat = userChats.filter(chat => chat != chatId);
+
+                // creeating a new user object to do the update in bd 
+                const user = {
+                    userName,
+                    userId,
+                    email,
+                    password,
+                    contactList,
+                    chats: removedChat,
+                };
+
+                //updating the user without the deleted chat
+                await User.updateOne({userId: chatMembers[pos]}, user);
+
+            } catch (error) {
+                return res.status(500).json({error: error});
+            }
+
+        }
     }
 
     try {

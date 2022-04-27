@@ -1,12 +1,9 @@
 const router = require('express').Router();
-const User = require('../models/User.js');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 const generateId = require('../src/generateId.js');
-
-router.get('/', (req, res) => {
-    res.status(200).json({message: 'Agora API'});
-});
+const User = require('../models/User.js');
+const Chat = require('../models/Chat.js');
 
 //Register users
 router.post('/register', async(req, res) => {
@@ -33,8 +30,6 @@ router.post('/register', async(req, res) => {
         return res.status(500).json({error: 'A user with this email already exist'});
     }
 
-    const contactList = [];
-
     let userId = generateId();
     let findUserId = await User.findOne({userId: userId}, '-password');
     if(findUserId){
@@ -43,6 +38,9 @@ router.post('/register', async(req, res) => {
             findUserId = await User.findOne({userId: userId}, '-password');
         }while(findUserId)
     }
+    
+    const contactList = [];
+    const chats = [];
 
     //Creating user object
     let user = {
@@ -51,6 +49,7 @@ router.post('/register', async(req, res) => {
         email,
         password: passHash,
         contactList,
+        chats,
     }
 
     try {
@@ -60,9 +59,10 @@ router.post('/register', async(req, res) => {
         res.status(201).json(
             user = {
                 userName,
-                userId: generateId,
+                userId: userId,
                 email,
-                contactList
+                contactList,
+                chats
             }
         );
         
@@ -72,11 +72,60 @@ router.post('/register', async(req, res) => {
     }
 });
 
+//Auth
+router.post('/auth', async(req, res) => {
+
+    const { email , password } = req.body;
+
+    //checking if user exist
+    const findUser = await User.findOne({email: email});
+    if(!findUser){
+        return res.status(404).json({error: 'User not found'});
+    }
+
+    //checking if password match
+    const checkPass = await bcrypt.compare(password, findUser.password);
+    if(!checkPass){
+        return res.status(500).json({error: 'Passwords dont match'}); 
+    }
+
+    const { userName , userId , contactList } = findUser;
+    
+    //generate token
+    try {
+        
+        const secret = process.env.SECRET;
+        
+        const token = jwt.sign({id: findUser._id}, secret);
+        
+        console.log(contactList)
+        console.log(findUser)
+
+        //create user object
+        const user = {
+            userName,
+            userId,
+            email,
+            contactList,//use JSON.parse() on the front end
+            token
+            /*the token will be stored in local storage 
+            or in session storage to be used on the front end.*/
+        };
+
+        res.status(200).json(user);
+
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({error: error});
+    }
+
+});
+
 //Get user list
 router.get('/list', async(req, res) => {
 
     //returning a list with all users
-    const userList = await User.find({}, '-password -email -_id -contactList');
+    const userList = await User.find({}, '-password -_id -contactList');
     res.status(200).json(userList);
 
 });
@@ -100,10 +149,10 @@ router.get('/find/:userId', async(req, res) => {
 router.patch('/update/:userId', async(req, res) => {
     const id = req.params.userId;
 
-    let { userName, userId, email, password, contactList } = req.body;
+    let { userName, email, password, contactList , chats } = req.body;
 
-    const fields = [userName, userId, email, password, contactList];
-    const fieldsName = ['userName', 'userId', 'email', 'password', 'contactList'];
+    const fields = [userName, email, password, contactList];
+    const fieldsName = ['userName', 'email', 'password', 'contactList'];
 
     //checking all fields
     for(let pos in fields){
@@ -123,6 +172,7 @@ router.patch('/update/:userId', async(req, res) => {
     const passHash = await bcrypt.hash(password, salt);
 
     //Creating a user object with new data
+    let userId = findUser.userId;
     const user = {
         userName,
         userId,
@@ -134,7 +184,7 @@ router.patch('/update/:userId', async(req, res) => {
     try {
 
         //Updating user data
-        const updateUser = await User.updateOne({userId: id}, user);
+        await User.updateOne({userId: id}, user);
 
         return res.status(200).json({message: 'User data has been updated'});
         
@@ -149,9 +199,40 @@ router.delete('/delete/:userId', async(req, res) => {
     const id = req.params.userId;
 
     //Checking isf user exist
-    const findUser = await User.find({userId: id}, '-password');
+    const findUser = await User.findOne({userId: id}, '-password');
     if(!findUser){
         return res.status(422).json({error: 'User not found'});
+    }else {
+        //list of chats
+        const { chats } = findUser;
+        console.log(chats)
+        for(let pos in chats){
+
+            try {
+                //find chat
+                const findChat = await Chat.findOne({chatId: chats[pos]});
+                const { name, members, chatId, messages } = findChat;
+
+                //removing user of chat
+                const removeUser = members.filter(member => member != id);
+
+                //create a new chat object
+                const chat = {
+                    name,
+                    members: removeUser,
+                    chatId, 
+                    messages,
+                };
+
+                //doing update without the member deleted
+                await Chat.updateOne({chatId: chats[pos]}, chat);
+                
+            } catch (error) {
+                console.log(error);
+                return res.status(500).json({error: error});
+            }
+        }
+
     }
 
     try {
