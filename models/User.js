@@ -21,9 +21,14 @@ const userSchema = new Schema({
         required: true,
     },
     contactList: {
-        type: String,
+        type: Object,
         required: true,
-        default: '',
+        default: [],
+    },
+    chats: {
+        type: Object,
+        required: true,
+        default: [],
     }
 });
 

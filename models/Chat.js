@@ -8,9 +8,9 @@ const chatSchema = new Schema({
         required: true
     },
     members: {
-        type: String,
+        type: Object,
         required: true,
-        default: '',
+        default: [],
     },
     chatId: {
         type: String,
@@ -18,9 +18,9 @@ const chatSchema = new Schema({
         default: generateId,
     },
     messages: {
-        type: String,
+        type: Object,
         required: false,
-        default: '[]',
+        default: [],
     }
 });
 
