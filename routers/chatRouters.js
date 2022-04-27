@@ -4,7 +4,6 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 const generateId = require('../src/generateId.js');
 const User = require('../models/User.js');
-const { json } = require('express/lib/response');
 
 //teste router
 router.get('/', (req, res) => {
