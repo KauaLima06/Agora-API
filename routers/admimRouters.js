@@ -3,8 +3,8 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 const generateId = require('../src/generateId.js');
 const User = require('../models/User.js');
-const Group = require('../models/Group.js');
-const Conversation = require('../models/Chat.js');
+const Conversation = require('../models/Conversations.js');
+const Chat = require('../models/Chat.js');
 
 router.get('/', (req, res) => {
     res.status(200).json({message: 'Welcome to the admin panel'});
