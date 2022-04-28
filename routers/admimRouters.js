@@ -13,9 +13,6 @@ router.get('/', (req, res) => {
 //login
 router.post('/auth', async(req, res) => {
     const { email , password } = req.body;
-
-    
-
 });
 
 module.exports = router;

@@ -232,11 +232,9 @@ router.delete('/delete/:userId', async(req, res) => {
                 return res.status(500).json({error: error});
             }
         }
-
     }
 
     try {
-        
         //Deleting user
         await User.deleteOne({userId: id});
         res.status(200).json({message: 'User removed'});

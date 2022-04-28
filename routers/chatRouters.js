@@ -120,33 +120,104 @@ router.get('/find/:chatId', async(req, res)=> {
 
 //Update chat data
 router.patch('/update/:chatId', async(req, res) => {
-
+    
     const chatId = req.params.chatId;
-    const { name, members, messages } = req.body;
+    const { name, members: newMembers, messages } = req.body;
+    let chatMembers = [];
+    
+    const fields = [name, newMembers, messages];
+    const nameFields = ['name', 'members', 'messages'];
+    for(let pos in fields){
+        if(!fields[pos]){
+            return res.status(400).json({error: `The field ${nameFields[pos]} is require`});
+        }
+    }
+    //verificar se os campos não vinheram vazios
 
     const findChat = await Chat.findOne({chatId: chatId});
+
     if(!findChat){
         return res.status(404).json({error: 'Chat not found'});
+    }else {
+        const { name, members, chatId, messages } = findChat;
+        
+        for(let pos in members){
+            const member = await User.findOne({userId: members[pos]});
+            if(member){
+                const { userName, userId: memberId, email, password, contactList, chats } = member;
+                
+                const findUserInChat = newMembers.find(userId => userId == memberId);
+                if(findUserInChat != undefined){
+
+                    chatMembers.push(memberId)
+                    const alreadyInChatList = chats.find(chatsId => chatsId == chatId);
+                    
+                    if(alreadyInChatList != undefined){ 
+                        continue;
+                    }else{
+
+                        let addChatInList = chats;
+                        addChatInList.push(chatId);
+
+                        const userUpdate = {
+                            userName,
+                            userId: memberId,
+                            email,
+                            password,
+                            contactList,
+                            chats: addChatInList,
+                        };
+
+                        try {
+                            
+                            await User.updateOne({userId: memberId}, userUpdate);
+                            
+                        } catch (error) {
+                            console.log(error);
+                            return res.status(500).json({error: error});
+                        }
+                    }
+                }else{
+
+                    const newChats = chats.filter(chatsId => chatsId != chatId);
+                    const user = {
+                        userName,
+                        userId: memberId,
+                        email,
+                        password,
+                        contactList,
+                        chats: newChats,
+                    };
+
+                    try {
+
+                        await User.updateOne({userId: memberId}, user);
+                        
+                    } catch (error) {
+                        console.log(error);
+                        return res.status(500).json({error: error});
+                    }
+                }
+            }
+        }
     }
 
     const chatUpdate = {
         name,
-        members,
+        members: chatMembers,
         chatId,
         messages,
     };
 
     try {
-        
-        await Chat.updateOne({chatId: chatId}, chatUpdate);
 
+        await Chat.updateOne({chatId: chatId}, chatUpdate);
         return res.status(200).json({message: 'Chat data has been updated'});
 
     } catch (error) {
         console.log(error);
         res.status(500).json({error: error});
     }
-
 });
 
 //Delete chat
@@ -159,7 +230,7 @@ router.delete('/delete/:chatId', async(req, res) => {
         return res.status(404).json({error: 'Chat not found'});
     }else{
         //list of chat members
-        const chatMembers = findChat.members;
+        const { members: chatMembers } = findChat;
         for(let pos in chatMembers){
 
             try {
