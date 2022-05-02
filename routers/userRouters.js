@@ -9,6 +9,7 @@ const Chat = require('../models/Chat.js');
 router.post('/register', async(req, res) => {
 
     const { userName, email, password } = req.body;
+    console.log(req.body)
 
     const fields = [userName, email, password];
     const fieldsName = ['userName', 'email', 'password'];
@@ -89,7 +90,7 @@ router.post('/auth', async(req, res) => {
         return res.status(500).json({error: 'Passwords dont match'}); 
     }
 
-    const { userName , userId , contactList } = findUser;
+    const { userName , userId , contactList , chats} = findUser;
     
     //generate token
     try {
@@ -106,7 +107,8 @@ router.post('/auth', async(req, res) => {
             userName,
             userId,
             email,
-            contactList,//use JSON.parse() on the front end
+            contactList,
+            chats,
             token
             /*the token will be stored in local storage 
             or in session storage to be used on the front end.*/
