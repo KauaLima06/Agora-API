@@ -133,12 +133,25 @@ router.get('/list', async(req, res) => {
 });
 
 //Get user
-router.get('/find/:userId', async(req, res) => {
+router.get('/findById/:userId', async(req, res) => {
 
     const userId = req.params.userId;
 
     //Checking if user exist
     const user = await User.findOne({userId: userId}, '-password');
+    if(!user){
+        return res.status(404).json({error: 'User not found'});
+    }
+    console.log(user)
+    res.status(200).json(user);
+
+});
+router.get('/findByEmail/:email', async(req, res) => {
+
+    const email = req.params.email;
+
+    //Checking if user exist
+    const user = await User.findOne({email: email}, '-password');
     if(!user){
         return res.status(404).json({error: 'User not found'});
     }
