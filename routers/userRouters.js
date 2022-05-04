@@ -151,7 +151,7 @@ router.get('/findByEmail/:email', async(req, res) => {
     const email = req.params.email;
 
     //Checking if user exist
-    const user = await User.findOne({email: email}, '-password');
+    const user = await User.findOne({email: email});
     if(!user){
         return res.status(404).json({error: 'User not found'});
     }
