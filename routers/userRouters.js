@@ -98,9 +98,6 @@ router.post('/auth', async(req, res) => {
         const secret = process.env.SECRET;
         
         const token = jwt.sign({id: findUser._id}, secret);
-        
-        console.log(contactList)
-        console.log(findUser)
 
         //create user object
         const user = {
@@ -127,7 +124,7 @@ router.post('/auth', async(req, res) => {
 router.get('/list', async(req, res) => {
 
     //returning a list with all users
-    const userList = await User.find({}, '-password -_id -contactList');
+    const userList = await User.find({}, '-password -_id -contactList -chats');
     res.status(200).json(userList);
 
 });

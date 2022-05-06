@@ -29,7 +29,12 @@ const userSchema = new Schema({
         type: Object,
         required: true,
         default: [],
-    }
+    },
+    isConfirmed: {
+        type: Boolean,
+        required: true,
+        default: false,
+    },
 });
 
 const User = mongoose.model('User', userSchema);
