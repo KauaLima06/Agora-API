@@ -143,6 +143,19 @@ router.get('/findById/:userId', async(req, res) => {
     res.status(200).json(user);
 
 });
+router.get('/findByBdId/:userBdId', async(req, res) => {
+
+    const userBdId = req.params.userBdId;
+
+    //Checking if user exist
+    const user = await User.findOne({_id: userBdId}, '-password');
+    if(!user){
+        return res.status(404).json({error: 'User not found'});
+    }
+    console.log(user)
+    res.status(200).json(user);
+
+});
 router.get('/findByEmail/:email', async(req, res) => {
 
     const email = req.params.email;
@@ -161,7 +174,7 @@ router.get('/findByEmail/:email', async(req, res) => {
 router.patch('/update/:userId', async(req, res) => {
     const id = req.params.userId;
 
-    let { userName, email, password, contactList , chats } = req.body;
+    let { userName, email, password, contactList, chats, isConfirmed} = req.body;
 
     const fields = [userName, email, password, contactList];
     const fieldsName = ['userName', 'email', 'password', 'contactList'];
