@@ -4,6 +4,7 @@ const bcrypt = require('bcrypt');
 const generateId = require('../src/generateId.js');
 const User = require('../models/User.js');
 const Chat = require('../models/Chat.js');
+const { is } = require('express/lib/request');
 
 //Register users
 router.post('/register', async(req, res) => {
@@ -135,7 +136,7 @@ router.get('/findById/:userId', async(req, res) => {
     const userId = req.params.userId;
 
     //Checking if user exist
-    const user = await User.findOne({userId: userId}, '-password');
+    const user = await User.findOne({userId: userId}, '-password -__v');
     if(!user){
         return res.status(404).json({error: 'User not found'});
     }
@@ -143,12 +144,12 @@ router.get('/findById/:userId', async(req, res) => {
     res.status(200).json(user);
 
 });
-router.get('/findByBdId/:userBdId', async(req, res) => {
+router.get('/findByDbId/:userDBId', async(req, res) => {
 
-    const userBdId = req.params.userBdId;
+    const userDbId = req.params.userDbId;
 
     //Checking if user exist
-    const user = await User.findOne({_id: userBdId}, '-password');
+    const user = await User.findOne({_id: userDbId});
     if(!user){
         return res.status(404).json({error: 'User not found'});
     }
@@ -174,10 +175,10 @@ router.get('/findByEmail/:email', async(req, res) => {
 router.patch('/update/:userId', async(req, res) => {
     const id = req.params.userId;
 
-    let { userName, email, password, contactList, chats, isConfirmed} = req.body;
+    const { userName, email, password, contactList, chats, isConfirmed} = req.body;
 
-    const fields = [userName, email, password, contactList];
-    const fieldsName = ['userName', 'email', 'password', 'contactList'];
+    const fields = [userName, email, password, contactList, chats, isConfirmed];
+    const fieldsName = ['userName', 'email', 'password', 'contactList', 'chats', 'isConfirmed'];
 
     //checking all fields
     for(let pos in fields){
@@ -203,7 +204,9 @@ router.patch('/update/:userId', async(req, res) => {
         userId,
         email,
         password: passHash,
-        contactList
+        contactList,
+        chats,
+        isConfirmed
     }
 
     try {
@@ -217,6 +220,39 @@ router.patch('/update/:userId', async(req, res) => {
         console.log(error);
         return res.status(500).json({error: error});
     }
+});
+
+router.patch('/confirmEmail/:userId', async(req, res) => {
+    
+    const id = req.params.userId;
+    const { isConfirmed } = req.body;
+
+    const user = await User.findOne({userId: id}, '-password');
+    if(!user || user == null || user == undefined) return res.status(404).json({
+        error: true,
+        message: 'User not found',
+    });
+    
+    let { isConfirmed: confirmed } = user;
+    confirmed = isConfirmed;
+
+    try {
+        
+        await User.updateOne({userId: id}, {isConfirmed: confirmed});
+        console.log('rigyh')
+        return res.status(200).json({
+            error: false,
+            message: 'User was confirmed',
+        });
+
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({
+            error: true,
+            message: error,
+        });
+    }
+
 });
 
 //Delete user
