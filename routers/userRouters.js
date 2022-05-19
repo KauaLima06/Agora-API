@@ -4,13 +4,11 @@ const bcrypt = require('bcrypt');
 const generateId = require('../src/generateId.js');
 const User = require('../models/User.js');
 const Chat = require('../models/Chat.js');
-const { is } = require('express/lib/request');
 
 //Register users
 router.post('/register', async(req, res) => {
 
     const { userName, email, password } = req.body;
-    console.log(req.body)
 
     const fields = [userName, email, password];
     const fieldsName = ['userName', 'email', 'password'];
@@ -32,7 +30,7 @@ router.post('/register', async(req, res) => {
         return res.status(500).json({error: 'A user with this email already exist'});
     }
 
-    let userId = generateId();
+    const userId = generateId();
     let findUserId = await User.findOne({userId: userId}, '-password');
     if(findUserId){
         do {
@@ -125,7 +123,8 @@ router.post('/auth', async(req, res) => {
 router.get('/list', async(req, res) => {
 
     //returning a list with all users
-    const userList = await User.find({}, '-password -_id -contactList -chats');
+    // const userList = await User.find({}, '-password -_id -contactList -chats');
+    const userList = await User.find({}, '-password -_id');
     res.status(200).json(userList);
 
 });
@@ -140,10 +139,22 @@ router.get('/findById/:userId', async(req, res) => {
     if(!user){
         return res.status(404).json({error: 'User not found'});
     }
-    console.log(user)
     res.status(200).json(user);
 
 });
+router.get('/getUser/:userId', async(req, res) => {
+
+    const userId = req.params.userId;
+
+    //Checking if user exist
+    const user = await User.findOne({userId: userId}, '-_id -email -password -contactList -chats -isConfirmed -__v');
+    if(!user){
+        return res.status(404).json({error: 'User not found'});
+    }
+    res.status(200).json(user);
+
+});
+
 router.get('/findByDbId/:userDBId', async(req, res) => {
 
     const userDbId = req.params.userDbId;
@@ -153,7 +164,6 @@ router.get('/findByDbId/:userDBId', async(req, res) => {
     if(!user){
         return res.status(404).json({error: 'User not found'});
     }
-    console.log(user)
     res.status(200).json(user);
 
 });
@@ -166,7 +176,6 @@ router.get('/findByEmail/:email', async(req, res) => {
     if(!user){
         return res.status(404).json({error: 'User not found'});
     }
-    console.log(user)
     res.status(200).json(user);
 
 });
@@ -175,38 +184,78 @@ router.get('/findByEmail/:email', async(req, res) => {
 router.patch('/update/:userId', async(req, res) => {
     const id = req.params.userId;
 
-    const { userName, email, password, contactList, chats, isConfirmed} = req.body;
+    const { newUserName, newEmail, password: newPass, newContact, newchat, contactList: cttList } = req.body;
 
-    const fields = [userName, email, password, contactList, chats, isConfirmed];
-    const fieldsName = ['userName', 'email', 'password', 'contactList', 'chats', 'isConfirmed'];
+    // const fields = [userName, email, password, contactList, chats, isConfirmed];
+    // const fieldsName = ['userName', 'email', 'password', 'contactList', 'chats', 'isConfirmed'];
 
-    //checking all fields
-    for(let pos in fields){
-        if(!fields[pos]){
-            return res.status(400).json({error: `The field ${fieldsName[pos]} is required.`});
-        }
-    }
+    // //checking all fields
+    // for(let pos in fields){
+    //     if(!fields[pos]){
+    //         return res.status(400).json({error: `The field ${fieldsName[pos]} is required.`});
+    //     }
+    // }
     
     //Checking user exist
-    const findUser = await User.findOne({userId: id}, '-password');
+    const findUser = await User.findOne({userId: id});
     if(!findUser){
         return res.status(422).json({error: 'User not found'});
     }
 
+    const { userName, email, password, contactList, chats } = findUser;
     //Generating a new password
     const salt = await bcrypt.genSalt(12);
-    const passHash = await bcrypt.hash(password, salt);
+    let passHash;
+    if(!newPass) {
+        const { password } = findUser;
+        passHash = password;
+    }else {
+        passHash = await bcrypt.hash(newPass, salt);
+    }
 
+    if(newContact){
+        const { userId, conversationId } = newContact;
+        const findContact = await User.findOne({userId: userId}, '-password -chats -_id -__v -email -isConfirmed');
+
+        let { contactList } = findContact;
+
+        const contactToSave = {
+            name: userName,
+            userId: id,
+            conversationId
+        }
+
+        contactList.push(contactToSave);
+
+        try {
+
+            await User.updateOne({userId: userId}, { contactList });
+
+        } catch (error) {
+            console.log(error);
+            res.status(500).json({
+                error: true,
+                message: error,
+            });
+        }
+    }
+    let newCttList;
+    if(!cttList && newContact){
+        newCttList = contactList;
+        newCttList.push(newContact);
+    }else if(cttList){
+        newCttList = cttList;
+    }else {
+        newCttList = contactList;
+    }
+    console.log(newCttList)
     //Creating a user object with new data
-    let userId = findUser.userId;
     const user = {
         userName,
-        userId,
         email,
         password: passHash,
-        contactList,
+        contactList: newCttList,
         chats,
-        isConfirmed
     }
 
     try {
@@ -235,11 +284,9 @@ router.patch('/confirmEmail/:userId', async(req, res) => {
     
     let { isConfirmed: confirmed } = user;
     confirmed = isConfirmed;
-
     try {
         
         await User.updateOne({userId: id}, {isConfirmed: confirmed});
-        console.log('rigyh')
         return res.status(200).json({
             error: false,
             message: 'User was confirmed',
@@ -266,7 +313,6 @@ router.delete('/delete/:userId', async(req, res) => {
     }else {
         //list of chats
         const { chats } = findUser;
-        console.log(chats)
         for(let pos in chats){
 
             try {

@@ -15,13 +15,20 @@ const chatSchema = new Schema({
     chatId: {
         type: String,
         required: true,
-        default: generateId,
     },
     messages: {
         type: Object,
         required: false,
         default: [],
-    }
+    },
+    creator: {
+        type: String,
+        require: true
+    },
+    admimList: {
+        type: Object,
+        required: true
+    },
 });
 
 const Chat = mongoose.model('Chat', chatSchema);

@@ -13,12 +13,11 @@ router.get('/', (req, res) => {
 //Create chat
 router.post('/create', async(req, res) => {
 
-    const { name, members } = req.body;
+    const { name, members, creator, admimList } = req.body;
     //members = [members id, id, id, id]
 
-    const fields = [name, members];
-    const nameFields = ['name', 'members'];
-
+    const fields = [name, members, creator];
+    const nameFields = ['name', 'members', 'creator'];
     for(let pos in fields){
         if(!fields[pos]){
             return res.status(400).json({error: `The field ${nameFields} is required`})
@@ -43,7 +42,7 @@ router.post('/create', async(req, res) => {
             continue;
         }else{
 
-            let { userName, userId, email, password, contactList , chats } = findUser;
+            const { userName, userId, email, password, contactList , chats } = findUser;
 
             chats.push(chatId);
 
@@ -67,10 +66,13 @@ router.post('/create', async(req, res) => {
 
     }
 
+    let messages = [];
+
     let chat = {
         name,
         members,
         chatId,
+        messages,
     };
 
     try {
@@ -80,9 +82,10 @@ router.post('/create', async(req, res) => {
 
       res.status(201).json(
           chat = {
-              name,
-              members,
-              chatId,
+            name,
+            members,
+            chatId,
+            messages,
           }
       );
         
@@ -124,13 +127,13 @@ router.patch('/update/:chatId', async(req, res) => {
     const chatId = req.params.chatId;
     const { name: newName, members: newMembers, messages: newMessages } = req.body;
     
-    const fields = [newName, newMembers, newMessages];
-    const nameFields = ['name', 'members', 'messages'];
-    for(let pos in fields){
-        if(!fields[pos]){
-            return res.status(400).json({error: `The field ${nameFields[pos]} is require`});
-        }
-    }
+    // const fields = [newName, newMembers, newMessages];
+    // const nameFields = ['name', 'members', 'messages'];
+    // for(let pos in fields){
+    //     if(!fields[pos]){
+    //         return res.status(400).json({error: `The field ${nameFields[pos]} is require`});
+    //     }
+    // }
     //verificar se os campos não vinheram vazios
 
     const findChat = await Chat.findOne({chatId: chatId});
@@ -139,9 +142,9 @@ router.patch('/update/:chatId', async(req, res) => {
 
     if(!findChat){
         return res.status(404).json({error: 'Chat not found'});
-    }else {
-        const { name, members, chatId, messages } = findChat;
-
+    }
+    const { name, members, messages } = findChat;
+    if(newMembers){
         for(let pos in members){
 
             const findUser = await User.findOne({userId: members[pos]});
@@ -159,43 +162,51 @@ router.patch('/update/:chatId', async(req, res) => {
                 continue;
             }
         }
+    }else {
+        chatMembers = members;
     }
-    for(let pos in newMembers){
-        const findMember = chatMembers.find(member => member == newMembers[pos]);
-        if(findMember == undefined){
-            chatMembers.push(newMembers[pos]);
-        }else{
-            continue;
+
+    if(newMembers){
+        for(let pos in newMembers){
+            const findMember = chatMembers.find(member => member == newMembers[pos]);
+            if(findMember == undefined){
+                chatMembers.push(newMembers[pos]);
+            }else{
+                continue;
+            }
         }
     }
 
-    for(let pos in membersToRemove){
-        const findUserToRemove = await User.findOne({userId: membersToRemove[pos]});
-        if(findUserToRemove){
 
-            const { userName, userId, email, password, contactList, chats } = findUserToRemove;
-            let removeChat = chats.filter(chat => chat != chatId);
-
-            const user = {
-                userName,
-                userId,
-                email,
-                password,
-                contactList,
-                chats: removeChat,
-            };
-
-            try {
-
-                await User.updateOne({userId: userId}, user);
-                
-            } catch (error) {
-                console.log(error);
-                return res.status(500).json({error: error});
+    if(membersToRemove && membersToRemove != null && membersToRemove != undefined){
+        for(let pos in membersToRemove){
+            const findUserToRemove = await User.findOne({userId: membersToRemove[pos]});
+            if(findUserToRemove){
+    
+                const { userName, userId, email, password, contactList, chats } = findUserToRemove;
+                let removeChat = chats.filter(chat => chat != chatId);
+    
+                const user = {
+                    userName,
+                    userId,
+                    email,
+                    password,
+                    contactList,
+                    chats: removeChat,
+                };
+    
+                try {
+    
+                    await User.updateOne({userId: userId}, user);
+                    
+                } catch (error) {
+                    console.log(error);
+                    return res.status(500).json({error: error});
+                }
+    
+            }else{
+                continue;
             }
-
-        }else{
-            continue;
         }
     }
 
@@ -220,9 +231,7 @@ router.patch('/update/:chatId', async(req, res) => {
                 };
 
                 try {
-
                     await User.updateOne({userId: userId}, user);
-                    
                 } catch (error) {
                     console.log(error);
                     return res.status(500).json({error: error});
@@ -237,11 +246,13 @@ router.patch('/update/:chatId', async(req, res) => {
         }
     }
 
+    let chatName = newName != null ? newName : name;
+    let msgs = newMessages != null ? newMessages : messages;
+
     const chatUpdate = {
-        name: newName,
+        name: chatName,
         members: chatMembers,
-        chatId: chatId,
-        messages: newMessages,
+        messages: msgs,
     };
 
     try {

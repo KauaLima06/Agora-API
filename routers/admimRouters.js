@@ -3,7 +3,7 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 const generateId = require('../src/generateId.js');
 const User = require('../models/User.js');
-const Conversation = require('../models/Conversations.js');
+const Conversation = require('../models/Conversation.js');
 const Chat = require('../models/Chat.js');
 
 router.get('/', (req, res) => {

@@ -1,6 +1,5 @@
 const mongoose = require('mongoose');
 const { Schema } = mongoose;
-const generateId = require('../src/generateId.js');
 
 const userSchema = new Schema({
     userName: {
@@ -10,7 +9,6 @@ const userSchema = new Schema({
     userId: {
         type: String,
         required: true,
-        default: generateId,
     },
     email: {
         type: String,
