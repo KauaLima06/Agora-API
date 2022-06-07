@@ -184,7 +184,7 @@ router.get('/findByEmail/:email', async(req, res) => {
 router.patch('/update/:userId', async(req, res) => {
     const id = req.params.userId;
 
-    const { newUserName, newEmail, password: newPass, newContact, newchat, contactList: cttList } = req.body;
+    const { newUserName, newEmail, password: newPass, newContact, newchat, contactList: cttList , chats: chatList } = req.body;
 
     // const fields = [userName, email, password, contactList, chats, isConfirmed];
     // const fieldsName = ['userName', 'email', 'password', 'contactList', 'chats', 'isConfirmed'];
@@ -248,14 +248,14 @@ router.patch('/update/:userId', async(req, res) => {
     }else {
         newCttList = contactList;
     }
-    console.log(newCttList)
     //Creating a user object with new data
+    const chatsArray = chatList ? chatList : chats;
     const user = {
         userName,
         email,
         password: passHash,
         contactList: newCttList,
-        chats,
+        chats: chatsArray,
     }
 
     try {

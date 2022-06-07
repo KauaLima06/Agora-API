@@ -34,9 +34,9 @@ router.post('/create', async(req, res) => {
     }
 
     const chatMembers = members;
-
+    console.log(chatMembers)
     for(let pos in chatMembers){
-
+        console.log(chatMembers[pos]);
         const findUser = await User.findOne({userId: chatMembers[pos]});
         if(!findUser){
             continue;
@@ -44,21 +44,15 @@ router.post('/create', async(req, res) => {
 
             const { userName, userId, email, password, contactList , chats } = findUser;
 
-            chats.push(chatId);
+            let newChatList = chats;
+            newChatList.push(chatId)
 
             const user = {
-                userName,
-                userId,
-                email,
-                password,
-                contactList,
-                chats,
+                chats: newChatList,
             };
 
             try {
-
                 await User.updateOne({userId: userId}, user);
-                
             } catch (error) {
                 return res.status(500).json({error: error});
             }
@@ -73,6 +67,8 @@ router.post('/create', async(req, res) => {
         members,
         chatId,
         messages,
+        admimList,
+        creator,
     };
 
     try {
@@ -81,11 +77,13 @@ router.post('/create', async(req, res) => {
       await Chat.create(chat);  
 
       res.status(201).json(
-          chat = {
+          {
             name,
             members,
             chatId,
             messages,
+            admimList,
+            creator,
           }
       );
         
@@ -112,7 +110,7 @@ router.get('/find/:chatId', async(req, res)=> {
 
     const chatId = req.params.chatId;
 
-    const findChat = await Chat.findOne({chatId: chatId});
+    const findChat = await Chat.findOne({chatId: chatId}, '-_id -__v');
     if(!findChat){
         return res.status(404).json({error: 'Chat not found'});
     }
